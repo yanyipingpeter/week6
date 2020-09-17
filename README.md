@@ -8,10 +8,10 @@
  - 运行方法为，在week4.exe的路径中打开cmd 输入 week6 MP4文件名.mp4。
  - 程序目前仅测试了MP4的播放，其余视频封装格式未测试。
 
-###Developer
+### Developer
  - YYP
 
-###Instructions
+### Instructions
  - 程序目录下打开cmd， 输入week6 test.mp4
  - test.mp4 是测试音频,文件名作为启动参数
  - 传递给程序的启动参数是mp4文件的文件路径，若mp4文件与`week6.exe`文件在同一文件夹下，则可直接将mp4文件名作为启动参数  
