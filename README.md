@@ -3,7 +3,7 @@
 ### Development Enviroment
  - Visual Studio 2017
 
-## Program Description
+### Program Description
  - 编译后，在Debug/Release中运行exe, 亦可以直接在Debug文件夹中运行week6.exe。
  - 运行方法为，在week4.exe的路径中打开cmd 输入 week6 MP4文件名.mp4。
  - 程序目前仅测试了MP4的播放，其余视频封装格式未测试。
