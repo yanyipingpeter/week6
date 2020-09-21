@@ -96,7 +96,7 @@ void ControlSpeed(int& timeInterval, bool& faster, bool& slower)
 	default:
 		break;
 	}
-
+	 
 
 
 }
@@ -108,7 +108,7 @@ int sfp_refresh_thread(int timeInterval, bool& faster, bool& slower) {
 
 	while (!thread_exit) {
 		if (!thread_pause) {
-			SDL_Event event;
+			SDL_Event event;//设置一个事件不断发送
 			event.type = SFM_REFRESH_EVENT;
 			SDL_PushEvent(&event);
 		}
@@ -263,15 +263,15 @@ int sdlplayer(string filePath) {
 	SDL_Event event;
 
 	struct SwsContext* img_convert_ctx;
-	av_register_all();
+	av_register_all();//注册所有组件
 	avformat_network_init();
 	pFormatCtx = avformat_alloc_context();
 
-	if (avformat_open_input(&pFormatCtx, filePath.c_str(), NULL, NULL) != 0) {
+	if (avformat_open_input(&pFormatCtx, filePath.c_str(), NULL, NULL) != 0) {//打开输入视频文件
 		cout << "Couldn't open input stream" << endl;
 		return -1;
 	}
-	if (avformat_find_stream_info(pFormatCtx, NULL) < 0) {
+	if (avformat_find_stream_info(pFormatCtx, NULL) < 0) {//获取视频文件信息
 		cout << "Couldn't find stream information" << endl;
 		return -1;
 	}
@@ -287,16 +287,16 @@ int sdlplayer(string filePath) {
 		return -1;
 	}
 	pCodecCtx = pFormatCtx->streams[videoindex]->codec;
-	pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
+	pCodec = avcodec_find_decoder(pCodecCtx->codec_id);//查找解码器
 	if (pCodec == NULL) {
 		cout<<"Codec not found."<<endl;
 		return -1;
 	}
-	if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
+	if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {//打开解码器
 		cout<<"Could not open codec."<<endl;
 		return -1;
 	}
-	pFrame = av_frame_alloc();
+	pFrame = av_frame_alloc();//分配空间
 	pFrameYUV = av_frame_alloc();
 
 	out_buffer = (unsigned char*)av_malloc(av_image_get_buffer_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1));
@@ -348,7 +348,7 @@ int sdlplayer(string filePath) {
 	while (true) {
 	
 			while (1) {
-				if (av_read_frame(pFormatCtx, packet) < 0)
+				if (av_read_frame(pFormatCtx, packet) < 0)//读取一帧压缩数据
 					thread_exit = 1;
 
 				if (packet->stream_index == videoindex)
@@ -376,8 +376,8 @@ int sdlplayer(string filePath) {
 						avformat_close_input(&pFormatCtx);
 					}
 					if (true) {//比较视音频快慢
-						video_pts = (double)pFrame->pts * av_q2d(pFormatCtx->streams[videoindex]->time_base); //获得视频时间戳
-						delay = audio_pts - video_pts;
+						video_pts = (double)pFrame->pts * av_q2d(pFormatCtx->streams[videoindex]->time_base); //获得视频时间戳:pts*时机可得时间
+						delay = audio_pts - video_pts;//计算时间差
 						if (delay > 0.03) {
 							faster = true;
 						}
