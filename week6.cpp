@@ -70,10 +70,10 @@ void ControlSpeed(int& timeInterval, bool& faster, bool& slower)
 	case 1://1.5倍速
 	{
 		if (faster) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(int(timeInterval - timeInterval/1.5)) / 2);
+			std::this_thread::sleep_for(std::chrono::milliseconds(int(timeInterval - timeInterval/3)) / 2);
 		}
 		else {
-			std::this_thread::sleep_for(std::chrono::milliseconds(int(timeInterval - timeInterval / 1.5)));
+			std::this_thread::sleep_for(std::chrono::milliseconds(int(timeInterval - timeInterval / 3)));
 		}
 		if (slower) {
 			SDL_Delay(20);
