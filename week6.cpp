@@ -10,8 +10,8 @@
 #define SDL_MAIN_HANDLED
 #define MAX_AUDIO_FARME_SIZE 96000
 #define NUMBUFFERS (4)
-#define SFM_REFRESH_EVENT  (SDL_USEREVENT + 1)
-#define SFM_BREAK_EVENT  (SDL_USEREVENT + 2)
+#define SFM_REFRESH_EVENT  (SDL_USEREVENT + 1)//刷新
+#define SFM_BREAK_EVENT  (SDL_USEREVENT + 2)//退出
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -29,7 +29,7 @@ extern "C" {
 #include "week6.h"
 }
 
-typedef struct _tFrame {
+typedef struct _tFrame {//存解码之后的音频
 	void* data;
 	int size;
 	int samplerate;
@@ -42,11 +42,11 @@ using namespace std;
 #pragma comment(lib ,"SDL2.lib")
 #pragma comment(lib ,"SDL2main.lib")
 
-int thread_exit = 0;
-bool thread_pause = false;
+int thread_exit = 0;//退出标识
+bool thread_pause = false;//暂停标识
 bool seek_req = false;
 double increase = 0;
-bool fullscreen = false;
+bool fullscreen = false;//窗口最大化标识
 bool g_IsMaxWindow = false;
 int  g_FastForward = 0;// 0为默认播放速度，1为1.5倍，2为2倍
 
@@ -54,7 +54,7 @@ void ControlSpeed(int& timeInterval, bool& faster, bool& slower)
 {
 	switch (g_FastForward)
 	{
-	case 0:
+	case 0://原速播放
 	{
 		if (faster) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(timeInterval) / 2);
@@ -67,7 +67,7 @@ void ControlSpeed(int& timeInterval, bool& faster, bool& slower)
 		}
 		break;
 	}
-	case 1:
+	case 1://1.5倍速
 	{
 		if (faster) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(int(timeInterval - timeInterval/1.5)) / 2);
@@ -80,7 +80,7 @@ void ControlSpeed(int& timeInterval, bool& faster, bool& slower)
 		}
 		break;
 	}
-	case 2:
+	case 2://2倍速
 	{
 		if (faster) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(int(timeInterval - timeInterval / 2)) / 2);
@@ -89,7 +89,7 @@ void ControlSpeed(int& timeInterval, bool& faster, bool& slower)
 			std::this_thread::sleep_for(std::chrono::milliseconds(int(timeInterval - timeInterval / 2)));
 		}
 		if (slower) {
-			SDL_Delay(20);
+			SDL_Delay(10);
 		}
 		break;
 	}
@@ -101,7 +101,6 @@ void ControlSpeed(int& timeInterval, bool& faster, bool& slower)
 
 }
 
-
 int sfp_refresh_thread(int timeInterval, bool& faster, bool& slower) {
 	thread_exit = 0;
 	thread_pause = 0;
@@ -109,8 +108,8 @@ int sfp_refresh_thread(int timeInterval, bool& faster, bool& slower) {
 	while (!thread_exit) {
 		if (!thread_pause) {
 			SDL_Event event;//设置一个事件不断发送
-			event.type = SFM_REFRESH_EVENT;
-			SDL_PushEvent(&event);
+			event.type = SFM_REFRESH_EVENT;//刷新
+			SDL_PushEvent(&event);//发送一个事件
 		}
 		ControlSpeed(timeInterval, faster, slower);
 	}
@@ -127,8 +126,8 @@ int sfp_refresh_thread(int timeInterval, bool& faster, bool& slower) {
 void initOpenal(ALuint source)
 {
 	ALfloat SourceP[] = { 0.0, 0.0, 0.0 };
-	ALfloat SourceV[] = { 0.0, 0.0, 0.0 };
-	ALfloat ListenerPos[] = { 0.0, 0, 0 };
+	ALfloat SourceV[] = { 0.0, 0.0, 0.0 };// 源声音的位置
+	ALfloat ListenerPos[] = { 0.0, 0, 0 };// 源声音的速度
 	ALfloat ListenerVel[] = { 0.0, 0.0, 0.0 };
 	ALfloat ListenerOri[] = { 0.0, 0.0, -1.0,  0.0, 1.0, 0.0 };
 	alSourcef(source, AL_PITCH, 1.0);
@@ -149,16 +148,15 @@ double audio_pts;
 int64_t audio_timestamp;
 
 int SoundCallback(ALuint & bufferID) {
-	if (queueData.empty()) return -1;
-	PTFRAME frame = queueData.front();
-	queueData.pop();
+	if (queueData.empty())//队列为空则退出
+		return -1;
+	PTFRAME frame = queueData.front();//读取队列中的一帧
+	queueData.pop();//该帧数据出队
 	if (frame == nullptr)
 		return -1;
-	//把数据写入buffer
-	alBufferData(bufferID, AL_FORMAT_STEREO16, frame->data, frame->size, frame->samplerate);
-	//将buffer放回缓冲区
-	alSourceQueueBuffers(m_source, 1, &bufferID);
-	audio_pts = frame->audio_clock;
+	alBufferData(bufferID, AL_FORMAT_STEREO16, frame->data, frame->size, frame->samplerate);//把数据写入buffer
+	alSourceQueueBuffers(m_source, 1, &bufferID);//将buffer放回缓冲区
+	audio_pts = frame->audio_clock;//音频事件
 
 	//释放数据
 	if (frame) {
@@ -227,7 +225,7 @@ int sfp_control_thread(float& volumn, bool& volumnChange)
 	}
 	return 0;
 }
-void forward_func(double second) {//前进功能
+void forward_func(double second) {//音频前进功能
 	double target_pts = audio_pts + second;
 
 	while (!queueData.empty()) {
@@ -244,7 +242,6 @@ void forward_func(double second) {//前进功能
 		}
 	}
 }
-
 //sdl渲染画面
 int sdlplayer(string filePath) {
 	AVFormatContext* pFormatCtx;
@@ -314,7 +311,7 @@ int sdlplayer(string filePath) {
 		cout<<"Could not initialize SDL "<<endl;
 		return -1;
 	}
-	SDL_Window* screen;
+	SDL_Window* screen;//窗口
 	screen_w = 1080;
 	screen_h = 720;
 	screen = SDL_CreateWindow("week6", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -324,13 +321,13 @@ int sdlplayer(string filePath) {
 		cout << "SDL: could not create window - exiting:%s" << endl;
 		return -1;
 	}
-	SDL_Renderer* sdlRenderer = SDL_CreateRenderer(screen, -1, 0);
-	SDL_Texture* sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, pCodecCtx->width, pCodecCtx->height);
+	SDL_Renderer* sdlRenderer = SDL_CreateRenderer(screen, -1, 0);//渲染器
+	SDL_Texture* sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, pCodecCtx->width, pCodecCtx->height);//纹理
 	Uint32 pixformat = 0;
 
 	pixformat = SDL_PIXELFORMAT_IYUV;
 
-	SDL_Rect sdlRect;
+	SDL_Rect sdlRect;//窗口
 	sdlRect.x = 0;
 	sdlRect.y = 0;
 	sdlRect.w = screen_w;
@@ -518,7 +515,7 @@ int main(int agrc, char* argv[]) {
 	}
 
 	//内存分配
-	AVPacket* packet;
+	AVPacket* packet;//解码前的包
 	packet = (AVPacket*)av_malloc(sizeof(AVPacket));
 	pFrame_audio = av_frame_alloc();
 
@@ -532,8 +529,8 @@ int main(int agrc, char* argv[]) {
 	uint64_t in_ch_layout = pCodecCtx_audio->channel_layout; //输入的声道布局   
 	uint64_t out_ch_layout = AV_CH_LAYOUT_STEREO; //输出的声道布局（立体声）
 	int out_channels = av_get_channel_layout_nb_channels(out_ch_layout);//根据通道布局类型获取通道数
-	//根据通道数、样本个数、采样格式分配内存
-	int out_buffer_size = av_samples_get_buffer_size(NULL, out_channels, out_nb_samples, out_sample_fmt, 1);
+
+	int out_buffer_size = av_samples_get_buffer_size(NULL, out_channels, out_nb_samples, out_sample_fmt, 1);//根据通道数、样本个数、采样格式分配内存
 	uint8_t* out_buffer_audio;
 
 
@@ -570,9 +567,7 @@ int main(int agrc, char* argv[]) {
 
 				if (ret >= 0) {
 					out_buffer_audio = (uint8_t*)av_malloc(MAX_AUDIO_FARME_SIZE * 2);//*2是保证输出缓存大于输入数据大小
-					//重采样
-					swr_convert(swrCtx, &out_buffer_audio, MAX_AUDIO_FARME_SIZE, (const uint8_t * *)pFrame_audio->data, pFrame_audio->nb_samples);
-
+					swr_convert(swrCtx, &out_buffer_audio, MAX_AUDIO_FARME_SIZE, (const uint8_t * *)pFrame_audio->data, pFrame_audio->nb_samples);//重采样
 					out_buffer_size = av_samples_get_buffer_size(NULL, out_channels, pFrame_audio->nb_samples, out_sample_fmt, 1);
 					PTFRAME frame = new TFRAME;
 					frame->data = out_buffer_audio;
@@ -617,10 +612,10 @@ int main(int agrc, char* argv[]) {
 	sdlplay.detach();
 	ALint processed;
 	ALint  state;
-	for (int i = 0; i < NUMBUFFERS; i++) {
+	for (int i = 0; i < NUMBUFFERS; i++) {//填充数据
 		SoundCallback(m_buffers[i]);
 	}
-	alSourcePlay(m_source);
+	alSourcePlay(m_source);//播放音频
 	while (!queueData.empty()) {  //队列为空后停止播放
 		if (seek_req) {
 			forward_func(increase);
